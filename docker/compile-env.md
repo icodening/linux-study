@@ -23,57 +23,34 @@ docker run -itd --name ubuntu2004 -p 50022:22 imageId
 docker exec -it ubuntu2004 /bin/bash
 ````
 
-4. 更新``apt``源
+4. 更新``apt``源 [推荐使用国内源](../docs/apt-sources-ch.md)
 ````bash
 apt-get update
 ````
 
-5. 安装``vim``
+5. 安装必备软件
 ````bash
-apt install vim
+apt install libncurses-dev bison flex libssl-dev libelf-dev build-essential bc make gcc wget vim
 ````
 
-6. 修改``apt``镜像源.   [镜像源地址](https://mirror.tuna.tsinghua.edu.cn/help/ubuntu/)
-````bash
-vim /etc/apt/sources.list
-````
-```text
-# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
-deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricted universe multiverse
-# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricted universe multiverse
-deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-updates main restricted universe multiverse
-# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-updates main restricted universe multiverse
-deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-backports main restricted universe multiverse
-# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-backports main restricted universe multiverse
-deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-security main restricted universe multiverse
-# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-security main restricted universe multiverse
-
-# 预发布软件源，不建议启用
-# deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-proposed main restricted universe multiverse
-# deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-proposed main restricted universe multiverse
-```
-7. 安装必备软件
-````bash
-apt install libncurses-dev bison flex libssl-dev libelf-dev build-essential bc make gcc
-````
-
-8. 下载``Linux Kernel``源码. [Linux Kernel下载地址](https://kernel.org)  
+6. 下载``Linux Kernel``源码. [Linux Kernel下载地址](https://kernel.org)  
  我这里选择的是 ``5.18`` 版本
 ````bash
 wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.18.tar.xz
 ````
-9. 解压源码
+7. 解压源码
 ````bash
 tar -xvf linux-5.18.tar.xz
 ````
 
-10. 配置内核参数
+8. 配置内核参数
 ````bash
 cd linux-5.18
 make menuconfig
 ````
 
-11. 编译内核  
+9. 编译内核  
+编译内核是个比较耗时的任务，建议分配`4核`以上，运行内存``2G``即可
 ````bash
 make -j4 bzImage
 ````
