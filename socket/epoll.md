@@ -45,4 +45,7 @@ int socket(int domain, int type, int protocol);
 
 13. 将前面的到的文件描述符``fd`` 放置到``fdtable``(文件描述符表)  
 
-14. 从内核态退出到用户态，完成本次``socket``函数调用
+14. 从内核态退出到用户态，完成本次``socket``函数调用 
+
+### 2. bind
+``TODO``
