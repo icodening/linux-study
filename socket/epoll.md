@@ -68,5 +68,5 @@ int socket(int domain, int type, int protocol);
 int inet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 ````
 
-
-9.   
+### 3. listen
+``TODO``
