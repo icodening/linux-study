@@ -26,7 +26,7 @@ int socket(int domain, int type, int protocol);
 
 3. 调用sock_create(``net/socket.c``)构造一个套接字  
 
-4. 继续调用__sock_create(current->nsproxy->net_ns, family, type, protocol, res, 0)，其中第一个参数是获取当前进程的namespace proxy，再根据namespace proxy获取其网络命名空间
+4. 继续调用__sock_create(current->nsproxy->net_ns, family , type, protocol, res, 0)，其中第一个参数是获取当前进程的namespace proxy，再根据namespace proxy获取其网络命名空间
   
 5. 检查入参，如协议族、通讯类型是否符合取值范围  
 
@@ -48,4 +48,4 @@ int socket(int domain, int type, int protocol);
 14. 从内核态退出到用户态，完成本次``socket``函数调用 
 
 ### 2. bind
-``TODO``
+1. 系统调用__sys_bind(``net/socket.c ``)进入bind逻辑
