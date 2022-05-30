@@ -48,4 +48,25 @@ int socket(int domain, int type, int protocol);
 14. 从内核态退出到用户态，完成本次``socket``函数调用 
 
 ### 2. bind
-1. 系统调用__sys_bind(``net/socket.c ``)进入bind逻辑
+1. 系统调用__sys_bind(``net/socket.c``)进入bind逻辑
+
+2. 调用sockfd_lookup_light，轻量级方式获取socket struct  
+
+3. 调用``fdget(fd)``,根据传入的``int fd``获取具体的文件描述符结构体。其内部是调用``__fget_light``(``fs/file.c``)函数获得fd的
+
+4. 根据当前进程上下文(``task_struct``)获取``files_sturct``, 再通过``files_sturct``得到``fdtable(include/linux/fdtable.h)``文件描述符缓存表，最终得到``file``后再转换为``unsigned long``, 再将long转换为具体的``fd struct``(``__to_fd(include/linux/file.h)``)  
+
+5. 将``file``转为``socket strcut (sock_from_file)``  
+
+6. 调用``move_addr_to_kernel``将用户态socket地址复制到内核态中
+
+7. 回调``security_socket_bind``的钩子函数(``LSM``)
+
+8. 将具体的``socket``绑定到指定的地址上(``net/ipv4/af_inet.c``)。
+参考[What is an L3 Master Device](https://legacy.netdevconf.info/1.2/papers/ahern-what-is-l3mdev-paper.pdf)
+````c
+int inet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+````
+
+
+9.   
