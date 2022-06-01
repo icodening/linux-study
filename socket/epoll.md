@@ -3,9 +3,9 @@
 > 1. ### [socket](#1-socket)
 > 2. ### [bind](#2-bind)
 > 3. ### [listen](#3-listen)
-> 4. ### [epoll_create](#4-epollcreate)
-> 5. ### [epoll_ctl](#5-epollctl)
-> 6. ### [epoll_wait](#6-epollwait)
+> 4. ### [epoll_create](#4-epoll_create)
+> 5. ### [epoll_ctl](#5-epoll_ctl)
+> 6. ### [epoll_wait](#6-epoll_wait)
   
 
 ## 步骤详解
