@@ -1,11 +1,11 @@
 # epoll方式
 ## 主体流程
-> 1. socket
-> 2. bind
-> 3. listen
-> 4. epoll_create
-> 5. epoll_ctl
-> 6. epoll_wait
+> 1. ### [socket](#1-socket)
+> 2. ### [bind](#2-bind)
+> 3. ### [listen](#3-listen)
+> 4. ### [epoll_create](#4-epollcreate)
+> 5. ### [epoll_ctl](#5-epollctl)
+> 6. ### [epoll_wait](#6-epollwait)
   
 
 ## 步骤详解
@@ -149,3 +149,28 @@ fail_unlock:
 18. 将当前socket、port进行hash并存放到``inet_listen_hashbucket``上
 
 19. 将当前使用的socket port添加到``已使用表``中
+
+## 4. epoll_create
+1. 调用``epoll_create()``函数进入``do_epoll_create(fs/eventpoll.c)``
+
+2. 调用``ep_alloc(fs/eventpoll.c)``函数创建``eventpoll``
+
+3. 调用``get_current_user``获取当前用户
+
+4. 调用``kzalloc``分配一段内存, 内存大小为``eventpoll``的大小(sizeof)
+
+5. 初始化``eventpoll``的相关属性,如互斥锁、读写锁、等待队列、红黑树、所属用户
+
+6. 调用``get_unused_fd_flags``获取未使用的文件描述符fd
+
+7. 调用``anon_inode_getfile``函数获取对应的文件``file``
+
+8. 将文件描述符``fd``与文件``file``绑定
+
+9. 返回文件描述符``fd``
+
+## 5. epoll_ctl
+``TODO``
+
+## 6. epoll_wait
+``TODO``
