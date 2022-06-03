@@ -170,6 +170,88 @@ fail_unlock:
 9. 返回文件描述符``fd``
 
 ## 5. epoll_ctl
+1. 调用系统调用SYSCALL_DEFINE4(``fs/eventpoll.c``)
+
+2. 检查当前操作符是否合法，并将事件``EPOLLIN``从用户空间复制到内核空间,复制长度为``sizeof(struct epoll_event))``
+
+3. 调用``do_epoll_ctl``
+
+4. 调用``fget(epfd)``通过刚才创建epoll文件描述符的到的数值获取对应的``struct fd``
+
+5. 调用``fdget(sockfd)``函数,将之前调用``socket``返回的sockfd传入,以此获取``struct fd``
+
+6. 检查``sockfd``是否支持``poll``操作(``fd.file->f_op->poll``)
+
+7. 检查是否允许 EPOLLWAKEUP
+
+8. 检查当前event是否是独占事件``EPOLLEXCLUSIVE``, 如果是``EPOLL_CTL_MOD``或者``EPOLL_CTL_ADD``是不被允许的
+
+9. 从``epoll fd``中取出其file的私有数据``struct eventpoll``, 并调用``epoll_mutex_lock(&ep->mtx, 0, nonblock)``获取``eventpoll``的互斥量并上锁
+````c
+struct eventpoll {
+	/*
+	 * This mutex is used to ensure that files are not removed
+	 * while epoll is using them. This is held during the event
+	 * collection loop, the file cleanup path, the epoll file exit
+	 * code and the ctl operations.
+	 */
+	struct mutex mtx;
+
+	/* Wait queue used by sys_epoll_wait() */
+	wait_queue_head_t wq;
+
+	/* Wait queue used by file->poll() */
+	wait_queue_head_t poll_wait;
+
+	/* List of ready file descriptors */
+	struct list_head rdllist;
+
+	/* Lock which protects rdllist and ovflist */
+	rwlock_t lock;
+
+	/* RB tree root used to store monitored fd structs */
+	struct rb_root_cached rbr;
+
+	/*
+	 * This is a single linked list that chains all the "struct epitem" that
+	 * happened while transferring ready events to userspace w/out
+	 * holding ->lock.
+	 */
+	struct epitem *ovflist;
+
+	/* wakeup_source used when ep_scan_ready_list is running */
+	struct wakeup_source *ws;
+
+	/* The user that created the eventpoll descriptor */
+	struct user_struct *user;
+
+	struct file *file;
+
+	/* used to optimize loop detection check */
+	u64 gen;
+	struct hlist_head refs;
+
+#ifdef CONFIG_NET_RX_BUSY_POLL
+	/* used to track busy poll napi_id */
+	unsigned int napi_id;
+#endif
+
+#ifdef CONFIG_DEBUG_LOCK_ALLOC
+	/* tracks wakeup nests for lockdep validation */
+	u8 nests;
+#endif
+};
+````
+
+10. 调用``ep_find``函数，从``eventpoll``中的红黑树查找``epitem``(查找动作必须在eventpoll的mtx上锁之后进行)
+
+11. 如果得到的``epitem``已存在则直接返回``-EEXIST``. 否则调用``ep_insert``函数将``epitem``插入到``eventpoll``的红黑树中
+
+12. 检查当前用户支持监听的epoll上限, 可用``cat /proc/sys/fs/epoll/max_user_watches``查看。 如果超出上限则会报错-ENOSPC, 否则会调用``percpu_counter_inc(&ep->user->epoll_watches);``对当前用户的epoll监听数+1(PS.这个函数感觉类似Java中的ThreadLocal，从字面意思上得知是将每个CPU上的缓存监听数+1,也就是说这里改的是CPU缓存)
+
+13. 调用``kmem_cache_zalloc``尝试给``epitem``分配内存. 如果分配失败则会调用``percpu_counter_dec(&ep->user->epoll_watches);``对所有CPU缓存的epoll监听数-1,并报错``-ENOMEM``
+
+14. 调用``ep_rbtree_insert``将epitem插入到红黑树中  
 ``TODO``
 
 ## 6. epoll_wait
