@@ -252,7 +252,7 @@ struct eventpoll {
 13. 调用``kmem_cache_zalloc``尝试给``epitem``分配内存. 如果分配失败则会调用``percpu_counter_dec(&ep->user->epoll_watches);``对所有CPU缓存的epoll监听数-1,并报错``-ENOMEM``
 
 14. 调用``ep_rbtree_insert``将epitem插入到红黑树中  
-``TODO``
+
 
 ## 6. epoll_wait
 ``TODO``
