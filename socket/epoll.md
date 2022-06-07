@@ -253,6 +253,21 @@ struct eventpoll {
 
 14. 调用``ep_rbtree_insert``将epitem插入到红黑树中  
 
+15. 调用``reverse_path_check``检查``epoll``层数，最大4层。其检查的是``epitem->eventpoll->refs(hlist_head)``, 如果检查满足条件则会调用``ep_remove``函数移除对应epoll的epitem，并返回``-EINVAL``
+
+16. 调用``init_poll_funcptr``函数，用队列回调来初始化轮询表(``poll_table``)。 回调函数在``fs/eventpool.c 1239行ep_ptable_queue_proc``
+
+17. 调用``ep_item_poll``函数轮询，轮询epitem
+
+18. 调用``vfs_poll``函数，这里会紧接着调用``sock_poll(net/socket.c)``轮询socket，紧接着到``tcp_poll(net/ipv4/tcp.c)``等待TCP事件
+
+19. 在``tcp_poll``中，会继续调用``sock_poll_wait(include/net/sock.h)``函数对socket轮询并等待，调用``poll_wait(include/linux.poll.h)``, 然后回调poll_table中的_qproc函数，也就是刚才``第16步``初始化好的回调函数``ep_ptable_queue_proc``. 
+
+20. 调用``init_waitqueue_func_entry``初始化等待队列的回调函数，该回调函数位于``fs/eventpoll.c 1134行的ep_poll_callback``,这是等待队列唤醒时的回调函数, 也就是当文件描述符有事件触发时回调
+
+21. 调用``add_wait_queue``函数添加当前``entry``等待队列
+
+22. 检查当前文件是否时"就绪"状态，如果是则将当前epitem添加到就绪队列中
 
 ## 6. epoll_wait
 ``TODO``
