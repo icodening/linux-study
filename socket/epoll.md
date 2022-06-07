@@ -295,4 +295,4 @@ struct eventpoll {
 
 12. 调用``ep_item_poll``尝试轮询事件, vfs_poll ---> sock_poll ---> tcp_poll. tcp_poll中会读取当前socket的情况，如果是TCP_LISTEN状态则调用``inet_csk_listen_poll``函数来轮询监听到的连接数。 如果socket的``connection accept queue``不为空, 则返回``EPOLLIN``
 
-13. 如果``ep_item_poll``的返回值不为0, 则调用函数``epoll_put_uevent``将epoll的事件转移到用户空间中。 当所有的epitem都轮询完毕后, 则返回就绪数目。用户代码则可以根据该数值遍历``epoll_event``数组了
+13. 如果``ep_item_poll``的返回值不为0, 则调用函数``epoll_put_uevent``将epoll的事件转移到用户空间中。 当就绪列表中的所有元素都轮询完毕后, 则返回就绪数目。用户代码则可以根据该数值遍历``epoll_event``数组,并读取对应``fd``的数据了
