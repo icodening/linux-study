@@ -270,4 +270,29 @@ struct eventpoll {
 22. 检查当前文件是否时"就绪"状态，如果是则将当前epitem添加到就绪队列中
 
 ## 6. epoll_wait
-``TODO``
+1. 调用入口函数``do_epoll_wait(fs.eventpoll.c 2199行)``, 传入event_poll的``fd``、epoll_event指针、最大events长度、超时时间(``ms``). 成功返回时，会返回IO已就绪的fd数目，并且会将对应就绪的fd都赋值给刚才入参的``epoll_event指针``，这是一个数组，直接遍历该数组中的所有fd即可。 返回0时表示超时时间内没有就绪条目，返回-1时表示有报错.
+
+2. 进行基本的参数校验，如最大事件数必须满足 0 < maxevents < EP_MAX_EVENTS, 其中EP_MAX_EVENTS=INT_MAX / sizeof(struct epoll_event), INT_MAX=0x7fffffff即4字节。
+
+3. 校验给定的``epoll_event``指针是否是可写的(当有fd就绪时会赋值到这里，必须检查)，其原理其实就是检查给定的内存地址是否真的处于用户空间
+
+4. 调用``fdget(epfd)``函数，根据之前创建的epoll对象返回的fd，得到对应的``fd``
+
+5. 检查得到的``fd``是否是真的epoll
+
+6. 调用``ep_poll(ep, events, maxevents, timeout)``函数尝试获取就绪事件
+
+7. 调用``ep_events_available(ep)``函数, 传入eventpoll指针, 尝试获取对应eventpoll中的可用事件, 其返回值是可用的就绪事件数. 如果没有可用事件则将当前的等待队列元素的指针添加到eventpoll对应的等待队列, 并调用``schedule_hrtimeout_range(返回0表示超时)``函数，将当前进程sleep直到超时(可中断)
+
+8. 超时或被中断后,会标记当前进程的状态为``TASK_RUNNING``, 并再次尝试获取等待队列的内容.
+如果等待队列为空说明是超时导致,则会进入下一次循环; 如果等待队列不为空，则检查是否是超时导致唤醒当前进程, 如果不是超时则调用``eavail = list_empty(&wait.entry)``判断当前等待队列是否为空.
+
+9. 接着``第8点``进入下一次循环后会判断是否超时，如果超时则直接返回0,表示超时时间内无可用的就绪``fd``
+
+10. 如果有可用的就绪事件, 则会调用``ep_send_events``函数尝试将事件转移到用户空间, 即用户代码调用``epoll_wait``时传递的``epoll_event指针``
+
+11. ``ep_send_events``中会调用``ep_wakeup_source(epitem)``获取epitem中的wakeup_source, 如果wakeup_source不为空且状态为active, 则会调用``__pm_stay_awake``唤醒对应的epitem中的wakeup_source
+
+12. 调用``ep_item_poll``尝试轮询事件, vfs_poll ---> sock_poll ---> tcp_poll. tcp_poll中会读取当前socket的情况，如果是TCP_LISTEN状态则调用``inet_csk_listen_poll``函数来轮询监听到的连接数。 如果socket的``connection accept queue``不为空, 则返回``EPOLLIN``
+
+13. 如果``ep_item_poll``的返回值不为0, 则调用函数``epoll_put_uevent``将epoll的事件转移到用户空间中。 当所有的epitem都轮询完毕后, 则返回就绪数目。用户代码则可以根据该数值遍历``epoll_event``数组了
